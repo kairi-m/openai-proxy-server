@@ -1,0 +1,12 @@
+# Node.jsで使われる依存ライブラリフォルダ（容量大、不要）
+node_modules/
+
+# APIキーなどの機密情報を含む環境変数ファイル
+.env
+
+# エディタやOSが生成する不要ファイル（任意）
+.DS_Store
+*.log
+
+# Visual Studio Codeの設定ファイル（任意）
+.vscode/
