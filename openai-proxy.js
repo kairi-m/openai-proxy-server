@@ -90,3 +90,36 @@ app.post("/evaluate", async (req, res) => {
     res.status(500).json({ error: "AI評価に失敗しました。" });
   }
 });
+
+app.post("/goal-advice", async (req, res) => {
+  const { userPrompt } = req.body;
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは目標達成を支援する専門家です。ユーザーの目標やカテゴリ、締め切りに応じて、実行可能でやる気の出るアドバイスを与えてください。"
+          },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.7
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    res.json({ reply: response.data.choices[0].message.content });
+
+  } catch (err) {
+    console.error("🚨 goal-adviceエラー:", err.response?.data || err.message);
+    res.status(500).json({ reply: "提案を生成できませんでした。" });
+  }
+});
