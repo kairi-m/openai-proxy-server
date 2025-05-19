@@ -52,12 +52,12 @@ app.post("/evaluate", async (req, res) => {
 - 朝食：${entry.breakfast}
 - 昼食：${entry.lunch}
 - 夕食：${entry.dinner}
-- 起床時間：${entry.wakeUp}
-- 就寝時間：${entry.sleep}
+- この日の起床時間：${entry.wakeUp}
+- この日の就寝時間：${entry.sleep}
 - 運動時間：${entry.exercise}分
 - 活動記録：${entry.notes}
 
-この人の生活を健康面から評価し、改善案を提案してください。
+この人の生活を健康面から評価し、評価や改善案を提案してください。
 また、活動記録に対して前向きな励ましのコメントも添えてください。
 
 以下の形式で返答してください：
@@ -102,7 +102,7 @@ app.post("/goal-advice", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "あなたは目標達成を支援する専門家です。ユーザーの目標やカテゴリ、締め切りに応じて、実行可能でやる気の出るアドバイスを与えてください。"
+            content: "あなたは目標達成を支援する専門家です。ユーザーの目標やカテゴリ、締め切りに応じて、目標の実現に向けた実行可能でやる気の出るアドバイスを与えてください。"
           },
           { role: "user", content: userPrompt }
         ],
