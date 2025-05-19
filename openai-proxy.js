@@ -123,3 +123,63 @@ app.post("/goal-advice", async (req, res) => {
     res.status(500).json({ reply: "提案を生成できませんでした。" });
   }
 });
+
+app.post("/evaluate-lifestyle-summary", async (req, res) => {
+  const entries = req.body.entry;
+
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return res.status(400).json({ error: "評価対象の記録がありません。" });
+  }
+
+  const formatted = entries.map(e => {
+    return `【${e.date}】
+- 朝食：${e.breakfast || "未記入"}
+- 昼食：${e.lunch || "未記入"}
+- 夕食：${e.dinner || "未記入"}
+- 起床時間：${e.wakeUp || "未記入"}
+- 就寝時間：${e.sleep || "未記入"}
+- 運動時間：${e.exercise || "未記入"}分
+- 活動記録：${e.notes || "未記入"}`;
+  }).join("\n\n");
+
+  const prompt = `
+以下はあるユーザーの複数日分の生活記録です：
+
+${formatted}
+
+これらの記録をもとに、
+1. 生活習慣の全体的な評価（健康面で良い点と改善点）
+2. 改善のための提案（起床・就寝時間、運動、食事など）
+3. 活動に対する前向きな励ましコメント
+
+を以下のJSON形式で出力してください：
+
+{
+  "healthReview": "...",
+  "improvementSuggestions": "...",
+  "encouragement": "..."
+}
+`;
+
+  try {
+    const result = await axios.post("https://api.openai.com/v1/chat/completions", {
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "あなたは生活習慣の専門家です。" },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    res.json({ reply: JSON.parse(result.data.choices[0].message.content) });
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "評価に失敗しました。" });
+  }
+});
