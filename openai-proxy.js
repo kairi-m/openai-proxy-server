@@ -184,3 +184,75 @@ ${formatted}
     res.status(500).json({ error: "評価に失敗しました。" });
   }
 });
+
+app.post("/summarize-section", async (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: "要約するコンテンツが指定されていません。" });
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは学術論文の要約を専門とするAIアシスタントです。与えられた論文セクションの内容を、重要なポイントを保持しながら要約してください。"
+          },
+          {
+            role: "user",
+            content: `以下の論文セクションを要約してください：\n\n${content}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1000
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    res.json({ reply: response.data.choices[0].message.content });
+  } catch (err) {
+    console.error("セクション要約エラー:", err.response?.data || err.message);
+    res.status(500).json({ error: "要約処理に失敗しました。", details: err.message });
+  }
+});
+
+app.post("/summarize-full", async (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: "要約するコンテンツが指定されていません。" });
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは学術論文の要約を専門とするAIアシスタントです。論文全体を分析し、各セクションの主要なポイントと論文全体の貢献を含めて要約してください。"
+          },
+          {
+            role: "user",
+            content: `以下の論文全体を要約してください：\n\n${content}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    res.json({ reply: response.data.choices[0].message.content });
+  } catch (err) {
+    console.error("全体要約エラー:", err.response?.data || err.message);
+    res.status(500).json({ error: "論文全体の要約に失敗しました。", details: err.message });
+  }
+});
