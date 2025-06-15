@@ -7,6 +7,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const emotionMapBefore = {
+  happy: '確信',
+  stressed: 'ストレス',
+  tired: '疲労',
+  excited: '興奮',
+  normal: '何となく'
+};
+const emotionMapAfter = {
+  happy: '満足',
+  regret: '後悔',
+  relief: '安心',
+  guilty: '罪悪感',
+  normal: '普通'
+};
+
 app.post("/ask", async (req, res) => {
   const { userPrompt } = req.body;
 
@@ -254,5 +269,115 @@ app.post("/summarize-full", async (req, res) => {
   } catch (err) {
     console.error("全体要約エラー:", err.response?.data || err.message);
     res.status(500).json({ error: "論文全体の要約に失敗しました。", details: err.message });
+  }
+});
+
+app.post("/analyze-log", async (req, res) => {
+  const { log } = req.body;
+
+  // 感情を日本語に変換
+  const beforeEmotionJP = emotionMapBefore[log.beforeEmotion] || log.beforeEmotion;
+  const afterEmotionJP = emotionMapAfter[log.afterEmotion] || log.afterEmotion;
+
+  const prompt = `
+以下の節約/浪費ログを分析し、振り返りコメントを生成してください：
+
+- 種類: ${log.type === 'saving' ? '節約' : '浪費'}
+- 金額: ${log.amount}円
+- メモ: ${log.note}
+- 未来の自分へのメッセージ: ${log.message}
+- 選択前の感情: ${log.beforeEmotion}
+- 選択後の感情: ${log.afterEmotion}
+- シチュエーション: ${log.situations.join(', ')}
+
+以下のJSON形式で返答してください：
+{
+  "reflection": "振り返りコメント",
+  "suggestion": "改善提案（浪費の場合）または成功のポイント（節約の場合）",
+  "encouragement": "励ましのメッセージ"
+}`;
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは節約と浪費の分析を専門とするアドバイザーです。"
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    res.json({ reply: JSON.parse(response.data.choices[0].message.content) });
+  } catch (err) {
+    console.error("ログ分析エラー:", err.response?.data || err.message);
+    res.status(500).json({ error: "ログの分析に失敗しました。" });
+  }
+});
+
+app.post("/analyze-trends", async (req, res) => {
+  const { logs } = req.body;
+  
+  const prompt = `
+以下の過去の節約/浪費ログを分析し、傾向と改善点を抽出してください：
+
+${logs.map(log => {
+  const beforeEmotionJP = emotionMapBefore[log.beforeEmotion] || log.beforeEmotion;
+  const afterEmotionJP = emotionMapAfter[log.afterEmotion] || log.afterEmotion;
+  return `
+【${log.date}】
+- 種類: ${log.type === 'saving' ? '節約' : '浪費'}
+- 金額: ${log.amount}円
+- メモ: ${log.note}
+- 未来の自分へのメッセージ: ${log.message}
+- 感情の変化: ${beforeEmotionJP} → ${afterEmotionJP}
+- シチュエーション: ${log.situations.join(', ')}
+`}).join('\n')}
+
+以下のJSON形式で返答してください：
+{
+  "trendAnalysis": "全体的な傾向分析",
+  "emotionPatterns": "感情パターンの分析",
+  "situationAnalysis": "シチュエーション別の分析",
+  "recommendations": "改善のための具体的な提案"
+}`;
+
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは節約と浪費のパターン分析を専門とするアドバイザーです。"
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    res.json({ reply: JSON.parse(response.data.choices[0].message.content) });
+  } catch (err) {
+    console.error("傾向分析エラー:", err.response?.data || err.message);
+    res.status(500).json({ error: "傾向分析に失敗しました。" });
   }
 });
