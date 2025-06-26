@@ -330,7 +330,7 @@ app.post("/analyze-trends", async (req, res) => {
   const { logs } = req.body;
   
   const prompt = `
-以下の過去の節約/浪費ログを分析し、傾向と改善点を抽出してください：
+以下の過去の節約/浪費ログを分析し、ユーザーの金銭感覚と改善点を抽出してください：
 
 ${logs.map(log => {
   const beforeEmotionJP = emotionMapBefore[log.beforeEmotion] || log.beforeEmotion;
@@ -347,7 +347,7 @@ ${logs.map(log => {
 
 以下のJSON形式で返答してください：
 {
-  "trendAnalysis": "全体的な傾向分析",
+  "trendAnalysis": "金銭感覚の分析（お金に対する考え方や行動パターン）",
   "emotionPatterns": "感情パターンの分析",
   "situationAnalysis": "シチュエーション別の分析",
   "recommendations": "改善のための具体的な提案"
@@ -361,7 +361,7 @@ ${logs.map(log => {
         messages: [
           {
             role: "system",
-            content: "あなたは節約と浪費のパターン分析を専門とするアドバイザーです。"
+            content: "あなたは金銭感覚と節約・浪費のパターン分析を専門とするアドバイザーです。"
           },
           { role: "user", content: prompt }
         ],
@@ -377,7 +377,7 @@ ${logs.map(log => {
 
     res.json({ reply: JSON.parse(response.data.choices[0].message.content) });
   } catch (err) {
-    console.error("傾向分析エラー:", err.response?.data || err.message);
-    res.status(500).json({ error: "傾向分析に失敗しました。" });
+    console.error("金銭感覚分析エラー:", err.response?.data || err.message);
+    res.status(500).json({ error: "金銭感覚分析に失敗しました。" });
   }
 });
